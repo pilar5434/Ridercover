@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#231936"><title>RiderCover 3D | Ruta Limeña</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0a2840;color:white;font-family:system-ui,Arial,sans-serif;overflow:hidden}canvas{display:block;touch-action:none}
+#hud{position:fixed;z-index:4;top:10px;left:50%;transform:translateX(-50%);width:min(96%,760px);display:flex;justify-content:space-between;gap:5px;pointer-events:none}
+.stat{background:#062d47e8;border:1px solid #7ad8ff75;padding:7px 9px;border-radius:12px;text-align:center;min-width:0;flex:1}.stat small{font-size:clamp(8px,2vw,11px);display:block;color:#a7e5f4}.stat b{font-size:clamp(12px,3vw,20px)}
+#speech{position:fixed;z-index:5;top:clamp(85px,15vh,135px);left:50%;transform:translateX(-50%);width:min(86vw,440px);background:#fff;color:#084364;border-radius:24px;padding:17px 20px;font-size:clamp(13px,2.8vw,17px);font-weight:750;line-height:1.35;box-shadow:0 8px 35px #001a2f90;border:3px solid #ff8a2b;transition:opacity .4s,translate .4s;pointer-events:none;text-align:center}
+#speech:after{content:"";position:absolute;bottom:-15px;left:calc(50% - 13px);border-left:13px solid transparent;border-right:13px solid transparent;border-top:15px solid white}#speech.off{opacity:0;translate:0 -12px}
+#controls{position:fixed;z-index:5;bottom:max(20px,env(safe-area-inset-bottom));width:100%;display:flex;justify-content:space-between;padding:0 max(18px,6vw);pointer-events:none}
+.ctrl{pointer-events:auto;background:#073a5bc9;color:white;border:2px solid #ffffffa0;border-radius:20px;width:84px;height:70px;font-size:36px;font-weight:900;touch-action:none}
+#pause{position:fixed;z-index:5;right:14px;top:80px;border:0;border-radius:12px;background:#063b5bdf;color:white;padding:10px 15px;font-weight:800}
+#overlay{position:fixed;z-index:9;inset:0;background:#031e32cc;display:grid;place-items:center;padding:15px;backdrop-filter:blur(6px)}#overlay.hide,.hide{display:none!important}
+.panel{width:min(94vw,500px);max-height:92dvh;overflow:auto;background:linear-gradient(150deg,#07648d,#06314e);border:2px solid #54c4ef;border-radius:25px;text-align:center;padding:25px;box-shadow:0 20px 60px #0008}
+.brand{font-size:clamp(32px,7vw,48px);font-weight:1000}.brand span{color:#ff8b2e}.tag{color:#a7e9ff;letter-spacing:2px;font-weight:800}
+.panel p{line-height:1.5}.primary{border:0;border-radius:15px;background:linear-gradient(110deg,#ff7424,#ffbc49);color:#162f3d;padding:15px 20px;width:100%;font-size:17px;font-weight:900;cursor:pointer}.muted{color:#c3e3f0;font-size:12px}.chip{display:inline-block;background:#ffffff20;border-radius:20px;padding:7px 10px;margin:3px;font-size:12px}
+#loading{position:fixed;z-index:15;inset:0;background:#072d47;display:grid;place-items:center;text-align:center;padding:25px}#loading.hide{display:none}
+@media(max-width:650px){#hud{top:max(5px,env(safe-area-inset-top));width:calc(100% - 10px);gap:3px}.stat{padding:7px 3px;border-radius:9px}.stat small{font-size:9px}.stat b{font-size:clamp(12px,3.6vw,17px)}#speech{top:95px;width:86%;font-size:14px;padding:13px 14px}#pause{top:65px;right:9px;padding:8px 11px}#controls{bottom:max(22px,env(safe-area-inset-bottom));padding:0 16px}.ctrl{width:90px;height:78px;background:#063b5bdc}.panel{padding:20px 15px}}
+@media(min-width:800px){.ctrl{width:76px;height:60px}}
+
+/* Estética manga: sombras fuertes, tramas y viñeta de derrota original */
+body{background:#221936;font-family:Impact,'Arial Black',system-ui,sans-serif}
+.stat{background:#21172ce8;border:2px solid #f4cf53;box-shadow:3px 3px 0 #0b0813;transform:skew(-3deg)}
+#speech{border:4px solid #141020;box-shadow:7px 8px 0 #edc64a,0 12px 28px #0009;font-family:system-ui,sans-serif}
+.panel{background:linear-gradient(135deg,#3b235b,#152b53 60%,#552d66);border:4px solid #f8d35b;box-shadow:9px 9px 0 #110d1c}
+.brand{letter-spacing:1px;text-shadow:4px 4px 0 #100e1d}
+.ctrl{background:#3a245dcc;border:3px solid #ffdb58;box-shadow:4px 4px 0 #130e1d}
+.primary{border:3px solid #15111e;box-shadow:5px 5px 0 #0d0a13}
+#meme{display:none;margin:10px auto 16px;max-width:350px;background:#ffe8a5;color:#171321;border:5px solid #171321;box-shadow:7px 7px 0 #e0a73d;overflow:hidden;position:relative}
+#meme.show{display:block}
+#meme .meme-art{position:relative;height:155px;overflow:hidden;background:repeating-conic-gradient(from 10deg at 50% 78%,#ffd15b 0deg 10deg,#f5a53d 10deg 20deg)}
+#meme .meme-art svg{width:100%;height:100%;display:block}
+#meme .impact{position:absolute;top:4px;right:9px;font-size:26px;transform:rotate(12deg);color:#fae57a;-webkit-text-stroke:1.5px #18111d;text-shadow:3px 3px #1b1223}
+#meme .meme-copy{font-family:Impact,'Arial Black',sans-serif;padding:9px 10px;text-transform:uppercase;font-size:clamp(16px,4vw,23px);line-height:1.13}
+#meme .meme-copy span{color:#ac2854}
+#meme .meme-note{padding:0 12px 9px;font:600 12px system-ui,sans-serif}
+@media(max-height:690px){#meme .meme-art{height:115px}.panel{padding:12px}#meme{margin:6px auto}}
+</style></head><body>
+<div id="loading">🇵🇪 Cargando las calles de Lima...<p>Necesitas conexión a internet la primera vez que abras el juego.</p></div>
+<div id="hud"><div class="stat"><small>🏆 PUNTOS</small><b id="score">0</b></div><div class="stat"><small>🪙 RIDERCOINS</small><b id="coins">0/60</b></div><div class="stat"><small>❤️ VIDAS</small><b id="lives">❤️❤️❤️</b></div><div class="stat"><small>⚡ VELOCIDAD</small><b id="speed">1.0x</b></div></div>
+<div id="speech" class="off" aria-live="polite"></div>
+<button id="pause" class="hide">Ⅱ PAUSA</button>
+<div id="controls" class="hide"><button class="ctrl" id="left" aria-label="Izquierda">◀</button><button class="ctrl" id="right" aria-label="Derecha">▶</button></div>
+<div id="overlay"><div class="panel"><div class="tag">MISIÓN DELIVERY • LIMA, PERÚ 🇵🇪</div><div class="brand">Rider<span>Cover</span></div><h2 id="heading">🛵 Ruta Limeña 3D</h2><p id="message">Esquiva los vehículos, recoge RiderCoins y descubre por qué es importante tener respaldo durante tu turno.</p><div id="meme" aria-label="Viñeta de anime original"><div class="meme-art"><span class="impact">¡ゴゴゴ!</span><svg viewBox="0 0 340 160" aria-hidden="true"><g stroke="#171321" stroke-width="5" stroke-linejoin="round"><path d="M90 170 L74 115 L100 73 L143 69 L164 114 L155 170" fill="#3756a0"/><path d="M103 81 L100 41 L121 15 L158 36 L162 83 L142 108 L117 103 Z" fill="#ffd0a4"/><path d="M92 54 L103 15 L128 29 L151 5 L170 35 L160 51 L144 36 L128 49 Z" fill="#25202c"/><path d="M108 67 L132 63 L129 80 L110 80 Z" fill="#fff"/><path d="M140 61 L158 57 L156 77 L139 77 Z" fill="#fff"/><path d="M123 93 L146 92 L139 104 Z" fill="#1d1725"/><path d="M196 146 L223 78 L267 66 L291 112 L273 160 Z" fill="#ee8c34"/><path d="M225 79 L222 43 L245 19 L280 35 L290 77 L271 94 L242 93 Z" fill="#ffd3a6"/><path d="M217 53 L235 14 L251 26 L273 12 L295 39 L289 58 L271 43 L249 53 Z" fill="#1f1827"/><path d="M236 63 L256 65 M268 64 L284 62" fill="none"/><path d="M249 79 L273 81 L263 88 Z" fill="#fff"/></g><g stroke="#15111e" stroke-width="3"><path d="M169 34 L200 14 M174 60 L217 46 M169 88 L205 102 M176 116 L211 142"/></g><text x="16" y="27" fill="#fff" stroke="#16101d" stroke-width="3" paint-order="stroke" font-family="Impact, sans-serif" font-size="25">¡OH NO!</text></svg></div><div class="meme-copy">Cuando sales sin prevenir... <span>¡el peligro te hace un combo!</span></div><div class="meme-note">🛡️ En la vida real, infórmate sobre las coberturas de RiderCover.</div></div><div id="extra"><span class="chip">← → / A D</span><span class="chip">🪙 60 monedas = +1 vida</span><span class="chip">❤️ Máximo 5 vidas</span><span class="chip">🏃 Evita a los ladrones</span></div><button class="primary" id="mainBtn">¡EMPEZAR A JUGAR!</button><p class="muted">Juego educativo. Los RiderCoins y las vidas del videojuego no equivalen a beneficios o coberturas reales.</p></div></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
+const $=id=>document.getElementById(id), clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.prepend(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xc6c6c8);scene.fog=new THREE.Fog(0xc6c6c8,58,140);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,180);camera.position.set(0,7.8,12.6);camera.lookAt(0,1,-16);
+scene.add(new THREE.HemisphereLight(0xffffff,0x54476c,2.5));
+const sun=new THREE.DirectionalLight(0xfff0c9,2.3);sun.position.set(-12,22,-20);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-22;sun.shadow.camera.right=22;sun.shadow.camera.top=25;sun.shadow.camera.bottom=-25;scene.add(sun);
+const mat=(c,roughness=1)=>new THREE.MeshToonMaterial({color:c});
+const inkMat=new THREE.LineBasicMaterial({color:0x1a1427,transparent:true,opacity:.85});
+function ink(o){if(!o.isMesh||o.userData.inked)return;o.userData.inked=true;
+ if(o.geometry?.attributes?.position&&o.geometry.attributes.position.count<1600){
+ const e=new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry,34),inkMat);
+ e.renderOrder=2;o.add(e);
+}}
+function mangaModel(group){group.traverse(ink)}
+const asphalt=mat(0x3b354b), grass=mat(0x3ba879), orange=mat(0xff852b), blue=mat(0x066995), white=mat(0xf9f9e9), black=mat(0x242b35), gold=new THREE.MeshStandardMaterial({color:0xffcb35,metalness:.75,roughness:.22,emissive:0x694100,emissiveIntensity:.15});
+function box(w,h,d,m,x=0,y=0,z=0,shadow=false){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=shadow;o.receiveShadow=true;return o}
+function ball(r,m,x,y,z){const o=new THREE.Mesh(new THREE.SphereGeometry(r,12,10),m);o.position.set(x,y,z);o.castShadow=true;return o}
+const world=new THREE.Group();scene.add(world);
+world.add(box(120,.12,240,mat(0x99999a),0,-.16,-48));world.add(box(10,.1,240,asphalt,0,0,-48));
+// Veredas continuas de cemento: no quedan espacios vacíos entre la pista y las fachadas.
+for(const side of [-1,1]){
+ world.add(box(16,.26,240,mat(0xb8b1a7),side*13,.05,-48));
+ world.add(box(.22,.38,240,mat(0xe2d5bc),side*5.15,.14,-48));
+ world.add(box(.28,.12,240,mat(0x9a928b),side*21,.02,-48));
+}
+
+for(const x of [-5,5])world.add(box(.15,.07,210,white,x,.09,-45));
+const stripes=[];for(let z=-100;z<15;z+=9)for(const x of [-1.67,1.67]){let m=box(.12,.025,4,white,x,.09,z);world.add(m);stripes.push(m)}
+// Lima estilizada: manzanas continuas, tiendas, casas, árboles, postes, cables y combis.
+function cylinder(r1,r2,h,m,x=0,y=0,z=0){const o=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,10),m);o.position.set(x,y,z);o.castShadow=true;return o}
+const windows=mat(0x627b83),trunk=mat(0x71543e),leaves=[mat(0x356e43),mat(0x568f54),mat(0x2e6546)];
+const decorations=[],streetDetails=[];
+const signs=['BODEGA DON PEPE','POLLERÍA','MENÚ S/ 12','BOTICA','PANADERÍA','CEVICHERÍA','MERCADO','FERRETERÍA','JUGUERÍA','LIBRERÍA','DELIVERY','RESTAURANTE'];
+const facades=[0xd9c6a9,0xd1d0c9,0xe1b8a5,0xb9c6c1,0xe5d4a6,0xc5b7ba];
+function labelTexture(txt,bg='#c92f39',fg='#fff6d7'){
+ const cv=document.createElement('canvas');cv.width=512;cv.height=128;
+ const ctx=cv.getContext('2d');ctx.fillStyle=bg;ctx.fillRect(0,0,512,128);
+ ctx.fillStyle=fg;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 48px Arial';ctx.fillText(txt,256,64,485);
+ const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;return new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide});
+}
+const signMats=signs.map((t,i)=>labelTexture(t,i%3===0?'#bb2537':i%3===1?'#216e8e':'#e1a42e'));
+const roadText=labelTexture('LIMA - PERÚ','#34424c','#ffffff');
+// Avisos ficticios con referencias limeñas; sin marcas comerciales ni campañas reales.
+// Humor tipo TikTok en anuncios ficticios, sin logos ni imágenes de terceros.
+const ads=[
+ ['POV: LLEGAS TARDE','#f5cf44','#1b1630'],
+ ['BRO, ERA POR LA OTRA CUADRA','#8d55d5','#ffffff'],
+ ['ES CINE 🚬','#282039','#ffe16a'],
+ ['EVENTO CANÓNICO','#ff6c5a','#171322'],
+ ['YO: UNA CARRERITA MÁS','#37a9b4','#12192d'],
+ ['MI CAUSA: CONFÍA','#e9a93a','#1b1425'],
+ ['EL GPS: RECALCULANDO','#424dc2','#fff4c9'],
+ ['NADIE: / EL TRÁFICO: 💀','#e34b70','#ffffff'],
+ ['LIMA EN HORA PUNTA','#f0c83c','#271a30'],
+ ['¿Y MI RUTA? 😭','#2a8897','#fff5ce'],
+ ['RIDER COVER: PREVIENE','#472d8c','#ffe77a'],
+ ['SE TENÍA QUE DECIR','#cf394f','#fff5cf'],
+ ['¡YA PE! PIDE TU MENÚ','#e94c45','#fff4cf'],
+ ['PIDE TU POLLITO','#a63c39','#fff4cb'],
+ ['¡OFERTÓN! S/ 9.90','#e5b52e','#241c35'],
+ ['¡ARRIBA PERÚ!','#c72d39','#ffffff']
+];
+const adMats=ads.map(([t,bg,fg])=>labelTexture(t,bg,fg));
+
+for(let i=0;i<32;i++){
+ const z=12-i*7.25;
+ for(const side of [-1,1]){
+  const g=new THREE.Group();g.position.set(side*11.1,0,z);
+  // La fachada principal mira al centro de la pista en ambas aceras.
+  // Girar toda la manzana evita que puertas y carteles apunten hacia el horizonte.
+  g.rotation.y=-side*Math.PI/2;
+  const h=4.7+(i*7%6)*.68,w=5.5,d=5.1;
+  const facade=mat(facades[(i+(side===1?2:0))%facades.length]);
+  g.add(box(w,h,d,facade,0,h/2,0,true));
+  g.add(box(w+.3,.25,d+.3,mat(0x777574),0,h+.1,0,true));
+  // Locales con puertas y toldos, o casas con rejas y balcones.
+  const towardsRoad=1;
+  const front=d/2;
+  g.add(box(1.55,2.05,.09,mat(0x5c5551),-1.55,1.05,front+towardsRoad*.06));
+  g.add(box(1.35,1.8,.10,mat(0x526a72),1.2,1.1,front+towardsRoad*.07));
+  for(let y=3.1;y<h-.4;y+=1.45){for(const x of [-1.65,0,1.65]){
+   g.add(box(.9,.85,.08,windows,x,y,front+towardsRoad*.065));
+   g.add(box(1.05,.1,.35,mat(0xd6d4ca),x,y-.48,front+towardsRoad*.18));
+   g.add(box(.055,.9,.09,mat(0xe5ded0),x,y,front+towardsRoad*.13));
+  }}
+  if(i%4!==0){
+   g.add(box(4.7,.55,.14,signMats[(i*2+(side===1?1:0))%signMats.length],0,2.65,front+towardsRoad*.14));
+   g.add(box(4.9,.13,1.15,mat(i%2?0xc54b3f:0x286c8a),0,2.33,front+towardsRoad*.52));
+  }else{
+   g.add(box(4.6,.14,.75,mat(0x8d7770),0,3.05,front+towardsRoad*.4));
+   for(const x of [-2,0,2])g.add(box(.06,.7,.07,mat(0x484444),x,3.45,front+towardsRoad*.7));
+  }
+  // Paneles publicitarios de pared y avisos sobre los negocios.
+  if(i%3===0){
+   g.add(box(3.8,1.03,.15,adMats[(i+side+ads.length)%ads.length],0,h-.82,front+.21));
+   g.add(box(4.1,1.2,.12,mat(0x272638),0,h-.82,front+.12));
+  }else if(i%4===2){
+   g.add(box(1.55,.88,.12,adMats[(i*3+side+ads.length)%ads.length],1.7,3.25,front+.2));
+  }
+  if(i%5===0){ // Bandera peruana colgada en la fachada.
+   g.add(box(.55,.75,.06,mat(0xcc2739),-1.6,h-.8,front+towardsRoad*.12));
+   g.add(box(.55,.75,.06,white,-1.05,h-.8,front+towardsRoad*.12));
+   g.add(box(.55,.75,.06,mat(0xcc2739),-.5,h-.8,front+towardsRoad*.12));
+  }
+  world.add(g);decorations.push(g);
+  // Detalles pequeños en la vereda: árboles, puestos, postes y tachos.
+  const dgroup=new THREE.Group();dgroup.position.set(side*6.65,0,z);
+  if(i%3===0){
+   dgroup.add(cylinder(.15,.23,2.4,trunk,0,1.2,0));
+   for(const [x,y,r] of [[0,3.1,1.1],[-.5,2.8,.7],[.5,2.85,.72]]){
+    const c=new THREE.Mesh(new THREE.IcosahedronGeometry(r,2),leaves[i%3]);c.position.set(x,y,0);dgroup.add(c);
+   }
+   dgroup.add(box(1.3,.4,1.3,mat(0x77736d),0,.22,0));
+  }else if(i%3===1){
+   dgroup.add(cylinder(.07,.09,6.7,mat(0x4b4d52),0,3.35,0));
+   dgroup.add(box(1.7,.1,.1,mat(0x4b4d52),-side*.72,6.5,0));
+   dgroup.add(box(.5,.18,.36,mat(0xf9e2b4),-side*1.55,6.43,0));
+   for(const height of [5.55,5.85,6.1])dgroup.add(box(.035,.035,7.4,mat(0x38383c),side*.25,height,-.05));
+  }else{
+   dgroup.add(box(.85,1.05,.7,mat(0x477c61),0,.52,0));
+   dgroup.add(box(.9,.12,.75,mat(0x313b37),0,1.09,0));
+   dgroup.add(box(1.4,.9,1.25,mat(0xd64b42),side*1.45,1.35,0));
+   dgroup.add(box(1.6,.1,1.55,mat(0xf1c45e),side*1.45,1.85,0));
+  }
+  if(i%5===2){
+   const board=new THREE.Group();board.position.set(side*.3,0,-1.6);
+   board.rotation.y=-side*Math.PI/2;
+   board.add(box(.11,2.8,.11,mat(0x41414b),-.92,1.4,0));
+   board.add(box(.11,2.8,.11,mat(0x41414b),.92,1.4,0));
+   board.add(box(2.1,1.6,.16,mat(0x232332),0,2.2,0));
+   board.add(box(1.95,1.42,.08,adMats[(i+4)%ads.length],0,2.2,.14));
+   dgroup.add(board);
+  }
+  world.add(dgroup);decorations.push(dgroup);
+ }
+}
+// Cruces peatonales y paraderos, repartidos para evitar tramos visualmente vacíos.
+for(let i=0;i<16;i++){
+ const g=new THREE.Group();g.position.z=12-i*14.5;
+ if(i%3===0){for(let x=-4.6;x<=4.6;x+=1.15)g.add(box(.75,.026,1.4,white,x,.105,0));}
+ else {for(const side of [-1,1]){
+  g.add(box(.12,2.4,.12,mat(0x55565d),side*5.75,1.2,0));
+  g.add(box(.85,.58,.08,labelTexture('P','#216d9b','#fff'),side*5.75,2.4,0));
+ }}
+ world.add(g);streetDetails.push(g);
+}
+const rider=new THREE.Group();scene.add(rider);
+const wheelMat=mat(0x191725),skin=mat(0xffc69f),helmet=mat(0xff9e30),chrome=mat(0xd5e7f3);
+function wheel(z){
+ const tire=new THREE.Mesh(new THREE.TorusGeometry(.47,.16,12,24),wheelMat);
+ tire.rotation.y=Math.PI/2;tire.position.set(0,.57,z);rider.add(tire);
+ const hub=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.24,20),chrome);
+ hub.rotation.z=Math.PI/2;hub.position.set(0,.57,z);rider.add(hub);
+ for(let i=0;i<8;i++){const spoke=box(.04,.04,.46,chrome,0,.57,z);spoke.rotation.x=i*Math.PI/4;rider.add(spoke)}
+}
+wheel(-.95);wheel(.95);
+const chassis=new THREE.Mesh(new THREE.CapsuleGeometry(.43,1.45,8,16),orange);
+chassis.rotation.x=Math.PI/2;chassis.position.set(0,1.08,0);chassis.castShadow=true;rider.add(chassis);
+rider.add(box(.82,.18,.9,black,0,1.46,.24,true));
+rider.add(box(.75,.45,.55,blue,0,1.27,-.32,true));
+const front=new THREE.Mesh(new THREE.SphereGeometry(.31,18,12),chrome);front.scale.set(1,.72,.38);front.position.set(0,1.15,-1.08);rider.add(front);
+rider.add(box(1.26,.09,.12,black,0,1.92,-.78));
+for(const x of [-.55,.55]){rider.add(ball(.12,chrome,x,1.95,-.8));rider.add(box(.16,.58,.17,mat(0x273552),x,1.48,.33,true))}
+// Conductor de proporciones humanas, con postura sentada y estilo anime 2.5D.
+const jacket=mat(0xf47a28), pants=mat(0x253a60), boots=mat(0x161d2c), glove=mat(0x262738), hair=mat(0x252035);
+function limbBetween(a,b,radius,material){
+ const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b),delta=end.clone().sub(start);
+ const mesh=new THREE.Mesh(new THREE.CylinderGeometry(radius*.85,radius,delta.length(),12),material);
+ mesh.position.copy(start).add(end).multiplyScalar(.5);
+ mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());mesh.castShadow=true;rider.add(mesh);
+ rider.add(ball(radius*1.05,material,...b));return mesh;
+}
+// Cintura, hombros y chaqueta de repartidor; torso inclinado hacia el manubrio.
+const body=new THREE.Mesh(new THREE.CylinderGeometry(.43,.32,.86,18),jacket);
+body.position.set(0,2.10,.32);body.rotation.x=-.22;body.castShadow=true;rider.add(body);
+rider.add(ball(.33,pants,0,1.66,.43));
+rider.add(box(.48,.09,.12,white,0,2.35,.73));
+// Piernas dobladas, rodillas y botas sobre los apoyapiés.
+for(const side of [-1,1]){
+ const x=side*.29;
+ limbBetween([x,1.7,.40],[side*.54,1.13,-.03],.17,pants);
+ limbBetween([side*.54,1.13,-.03],[side*.51,.75,.46],.13,pants);
+ const boot=new THREE.Mesh(new THREE.CapsuleGeometry(.15,.22,6,12),boots);
+ boot.rotation.x=Math.PI/2;boot.position.set(side*.51,.71,.28);rider.add(boot);
+ // Brazos naturales con codos flexionados y manos agarrando el manubrio.
+ limbBetween([side*.37,2.37,.21],[side*.59,2.03,-.28],.14,jacket);
+ limbBetween([side*.59,2.03,-.28],[side*.55,1.92,-.79],.105,jacket);
+ rider.add(ball(.14,glove,side*.55,1.92,-.79));
+}
+// Cuello, cabeza humana con rostro estilizado, cabello y casco ajustado.
+const neck=new THREE.Mesh(new THREE.CylinderGeometry(.15,.16,.2,12),skin);neck.position.set(0,2.64,.26);rider.add(neck);
+const face=new THREE.Mesh(new THREE.SphereGeometry(.29,20,16),skin);
+face.scale.set(1,.98,.87);face.position.set(0,2.83,.19);rider.add(face);
+const hairCap=new THREE.Mesh(new THREE.SphereGeometry(.31,20,12,0,Math.PI*2,0,Math.PI*.53),hair);
+hairCap.position.set(0,2.92,.20);rider.add(hairCap);
+const helmetShell=new THREE.Mesh(new THREE.SphereGeometry(.36,24,16,0,Math.PI*2,0,Math.PI*.58),helmet);
+helmetShell.position.set(0,2.98,.2);rider.add(helmetShell);
+const brim=box(.57,.065,.22,helmet,0,2.91,-.08);rider.add(brim);
+// El personaje mira hacia el horizonte; mochila visible desde atrás.
+const bag=new THREE.Mesh(new THREE.BoxGeometry(.70,.73,.33),mat(0xffbc42));
+bag.position.set(0,2.06,.76);bag.rotation.x=-.12;rider.add(bag);
+rider.add(box(.57,.10,.05,white,0,2.17,.94));
+mangaModel(rider);rider.position.set(0,.1,4.1);
+// Esfera protectora translúcida: visible solo mientras el escudo está activo.
+const auraMat=new THREE.MeshPhysicalMaterial({color:0x80e8ff,transparent:true,opacity:.14,roughness:.16,metalness:0,side:THREE.DoubleSide,depthWrite:false,emissive:0x42cfff,emissiveIntensity:.24});
+const aura=new THREE.Mesh(new THREE.SphereGeometry(2.08,32,24),auraMat);
+aura.position.set(0,1.8,.1);aura.visible=false;rider.add(aura);
+const rimMat=new THREE.MeshBasicMaterial({color:0x8ceeff,transparent:true,opacity:.19,depthWrite:false,side:THREE.DoubleSide});
+const auraRim=new THREE.Mesh(new THREE.TorusGeometry(1.99,.025,8,72),rimMat);
+auraRim.rotation.x=.23;auraRim.position.set(0,1.8,.1);auraRim.visible=false;rider.add(auraRim);
+const lanes=[-3.1,0,3.1],active=[];let phase='menu',target=1,playerLane=1,score=0,coins=0,totalCoins=0,lives=3,elapsed=0,travel=0,speed=1,spawnTimer=0,invulnerable=0,shield=0,clock=0,tipIndex=0,tipTimer=0,speechTimer=0;
+const tips=[
+'🛵 ¡Hola! Soy Alex. Cada entrega implica riesgos en la calle.',
+'⚠️ Un accidente o robo puede interrumpir mis ingresos de trabajo.',
+'🛡️ RiderCover propone microseguros por turno desde S/3.',
+'📱 En el prototipo puedes activar tu respaldo con Yape o Plin.',
+'💬 Ante un incidente, la propuesta contempla reportarlo con fotos por WhatsApp.',
+'🪙 Cada 60 RiderCoins consigues una vida extra. ¡Máximo 5!'
+];
+function speech(s,seconds=5){$('speech').textContent=s;$('speech').classList.remove('off');speechTimer=seconds}
+function hud(){$('score').textContent=Math.floor(score).toLocaleString('es-PE');$('coins').textContent=coins+'/60';$('lives').textContent='❤️'.repeat(lives)+'🖤'.repeat(5-lives);$('speed').textContent=speed.toFixed(1)+'x'}
+function makeItem(type,lane,z){const group=new THREE.Group();group.position.set(lanes[lane],0,z);group.userData={type,lane,collected:false,approachSpeed:type==='car'?5+Math.random()*3:type==='thief'?4+Math.random()*2:0};
+ if(type==='coin'){
+  const coin=new THREE.Group();coin.position.y=1.28;coin.scale.setScalar(.72);
+  const rim=new THREE.Mesh(new THREE.CylinderGeometry(.43,.43,.105,24),mat(0xe5a900));
+  rim.rotation.x=Math.PI/2;coin.add(rim);
+  const face=new THREE.Mesh(new THREE.CylinderGeometry(.37,.37,.115,24),mat(0xffe12a));
+  face.rotation.x=Math.PI/2;coin.add(face);
+  const cv=document.createElement('canvas');cv.width=cv.height=128;
+  const cx=cv.getContext('2d');cx.clearRect(0,0,128,128);cx.fillStyle='#815100';
+  cx.textAlign='center';cx.textBaseline='middle';cx.font='bold 104px Arial';cx.fillText('R',64,68);
+  const tx=new THREE.CanvasTexture(cv);tx.colorSpace=THREE.SRGBColorSpace;
+  const letter=new THREE.MeshBasicMaterial({map:tx,transparent:true,depthWrite:false,side:THREE.DoubleSide});
+  const frontR=new THREE.Mesh(new THREE.PlaneGeometry(.57,.57),letter);
+  frontR.position.z=.068;coin.add(frontR);
+  const backR=frontR.clone();backR.rotation.y=Math.PI;backR.position.z=-.068;coin.add(backR);
+  group.add(coin);group.userData.spin=coin
+}
+ else if(type==='car'){
+  const body=mat([0xb7386c,0x7451ac,0x247c9a,0xe7aa43][Math.floor(Math.random()*4)]);
+  group.add(box(2.12,.65,3.55,body,0,.73,0,true));
+  const hood=new THREE.Mesh(new THREE.CapsuleGeometry(.86,1.25,4,12),body);hood.rotation.x=Math.PI/2;hood.scale.set(1,.45,1);hood.position.set(0,1.02,-.15);group.add(hood);
+  group.add(box(1.72,.72,1.72,body,0,1.44,.15,true));
+  group.add(box(1.54,.48,.08,mat(0x86d2db),0,1.5,1.04));
+  group.add(box(1.54,.48,.08,mat(0x86d2db),0,1.5,-.75));
+  for(const x of [-.82,.82]){
+   for(const z of [-1.1,1.1]){
+    const tire=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.24,18),wheelMat);
+    tire.rotation.z=Math.PI/2;tire.position.set(x*1.28,.47,z);group.add(tire);
+    group.add(cylinder(.18,.18,.025,mat(0xe8dfe9),x*1.45,.47,z));
+   }
+   group.add(box(.39,.22,.08,mat(0xfff2aa),x,.85,1.8));
+   group.add(box(.4,.2,.08,mat(0xd34165),x,.85,-1.8));
+  }
+  group.add(box(1.82,.2,.14,mat(0x27233c),0,.5,1.85));
+ }
+ else if(type==='barrier'){group.add(box(2.4,.9,.55,orange,0,.65,0,true));group.add(box(2.4,.18,.62,white,0,.8,0))}
+ else if(type==='thief'){
+  // Ladrón con camiseta de rayas blancas/negras, gorra negra y antifaz.
+  const shirt=mat(0xf4f4f0),ink=mat(0x11151d),pants=mat(0x242832);
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.34,.58,5,12),shirt);torso.position.y=1.48;torso.castShadow=true;group.add(torso);
+  for(let y=1.14;y<=1.82;y+=.18)group.add(box(.67,.095,.47,ink,0,y,.03));
+  group.add(ball(.33,skin,0,2.22,0));
+  // Antifaz en la cara orientada hacia el repartidor (+Z).
+  group.add(box(.57,.17,.11,ink,0,2.28,.29));
+  for(const x of [-.13,.13])group.add(ball(.045,white,x,2.29,.36));
+  group.add(cylinder(.38,.39,.2,ink,0,2.57,0));
+  group.add(box(.44,.055,.27,ink,0,2.49,.3));
+  for(const x of [-.23,.23]){
+   group.add(box(.24,.72,.28,pants,x,.57,0,true));
+   group.add(box(.2,.72,.26,shirt,x*1.9,1.5,0,true));
+   group.add(box(.28,.14,.42,ink,x,.18,.14));
+  }
+  group.userData.wiggle=Math.random()*6.28;
+ }
+ else if(type==='shield'){const orb=new THREE.Mesh(new THREE.SphereGeometry(.68,18,14),new THREE.MeshStandardMaterial({color:0x7deaff,transparent:true,opacity:.6,emissive:0x19a8d9,emissiveIntensity:.4}));orb.position.y=1.5;group.add(orb);group.add(box(.28,.48,.1,white,0,1.5,.6))}
+ mangaModel(group);scene.add(group);active.push(group)
+}
+function spawnRow(){if(elapsed>13&&Math.random()<.23){const lane=Math.floor(Math.random()*3);makeItem('thief',lane,-95);return;}const blocked=Math.floor(Math.random()*3);makeItem(Math.random()<.75?'car':'barrier',blocked,-95);const others=[0,1,2].filter(n=>n!==blocked);const pickup=others[Math.floor(Math.random()*others.length)];makeItem(Math.random()<.07?'shield':'coin',pickup,-99);if(Math.random()<.36)makeItem('coin',pickup,-108)}
+function clearItems(){for(const o of active)scene.remove(o);active.length=0}
+function start(){initAudio();clearItems();phase='play';target=1;playerLane=1;rider.position.x=0;score=coins=totalCoins=elapsed=travel=clock=0;lives=3;speed=.48;spawnTimer=2.6;invulnerable=shield=0;aura.visible=false;auraRim.visible=false;tipIndex=0;tipTimer=2.5;speechTimer=0;
+$('meme').classList.remove('show');$('overlay').classList.add('hide');$('pause').classList.remove('hide');$('controls').classList.remove('hide');hud();speech(tips[0],6)}
+const memes=[
+ {title:'POV: PENSASTE QUE NO PASABA NADA 💀',line:'El riesgo: «Permíteme presentarme»',impact:'💀 BRUH'},
+ {title:'MI COMPA: «TRANQUI, NO PASA NADA»',line:'El universo cinco segundos después...',impact:'⚡ NANI?!'},
+ {title:'YO ESQUIVANDO TODO... HASTA QUE NO',line:'Ese evento canónico sí que dolió 😭',impact:'😭 F'},
+ {title:'EXPECTATIVA: ENTREGA PERFECTA',line:'Realidad: necesitabas un plan B 🛡️',impact:'💥 PLOT TWIST'},
+ {title:'CUANDO EL ÚLTIMO CORAZÓN DESAPARECE',line:'La prevención entró al chat 📱',impact:'⚠️ GG'}
+];
+function gameOver(){phase='over';let best=0;try{best=Number(localStorage.getItem('ridercover3d_best')||0);if(score>best){best=Math.floor(score);localStorage.setItem('ridercover3d_best',best)}}catch{}
+const meme=memes[Math.floor(Math.random()*memes.length)];
+document.querySelector('#meme .meme-copy').innerHTML=meme.title+'<br><span>'+meme.line+'</span>';
+document.querySelector('#meme .impact').textContent=meme.impact;
+$('meme').classList.add('show');$('heading').textContent='💥 ¡TO BE CONTINUED...!';$('message').textContent=`¡El turno terminó! ${Math.floor(score)} puntos y ${totalCoins} RiderCoins recogidas. Récord: ${best}. La prevención importa dentro y fuera del juego.`;
+$('extra').innerHTML='<span class="chip">🛵 ¡Reta a tus amigos!</span><span class="chip">🛡️ Descubre el prototipo RiderCover</span>';
+$('mainBtn').textContent='🔄 VOLVER A JUGAR';$('overlay').classList.remove('hide');$('pause').classList.add('hide');$('controls').classList.add('hide');$('speech').classList.add('off')}
+let audioCtx=null;
+function initAudio(){try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume()}catch(e){}}
+function tone(freq,start,duration,volume=.09){if(!audioCtx)return;try{const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type='sine';osc.frequency.setValueAtTime(freq,start);gain.gain.setValueAtTime(.001,start);gain.gain.exponentialRampToValueAtTime(volume,start+.012);gain.gain.exponentialRampToValueAtTime(.001,start+duration);osc.connect(gain);gain.connect(audioCtx.destination);osc.start(start);osc.stop(start+duration+.015)}catch(e){}}
+function playCoin(){if(!audioCtx)return;const t=audioCtx.currentTime;tone(880,t,.12);tone(1320,t+.085,.16,.07)}
+function playLife(){if(!audioCtx)return;const t=audioCtx.currentTime;[660,880,1100].forEach((f,i)=>tone(f,t+i*.10,.18,.07))}
+function collision(o){const type=o.userData.type;if(type==='coin'){playCoin();coins++;totalCoins++;score+=100;speech('🪙 ¡RiderCoin recogida!',1.25);if(coins>=60){coins=0;if(lives<5){lives++;speech('❤️ ¡60 RiderCoins! Ganaste una vida extra. Contador reiniciado.',2.8);playLife()}else{score+=500;speech('⭐ ¡60 RiderCoins! Ya tienes 5 vidas: +500 puntos. Contador reiniciado.',2.8)}}}
+else if(type==='shield'){shield=10;speech('🛡️ ¡Esfera protectora activada durante 10 segundos!',2.5)}
+else if(type==='thief'){if(shield>0){shield=0;speech('🛡️ ¡Tu escudo evitó el robo!',2.7)}else{const stolen=coins;coins=0;invulnerable=1.5;speech(stolen>0?'🚨 ¡Un ladrón te robó '+stolen+' RiderCoins!':'🚨 ¡Un ladrón intentó robarte! No tenías RiderCoins.',3.1)}}
+else if(invulnerable<=0){if(shield>0){shield=0;speech('🛡️ Tu escudo absorbió el impacto.',2)}else{lives--;invulnerable=2.2;speech('⚠️ ¡Cuidado! La prevención siempre es importante.',2.5);if(lives<=0)gameOver()}}
+hud()}
+function update(dt){clock+=dt;
+if(phase!=='play')return;
+elapsed+=dt;speed=.48+elapsed*.032;const movement=dt*(13*speed);travel+=movement;score+=dt*speed*15;
+rider.position.x+=(lanes[target]-rider.position.x)*Math.min(1,dt*13);rider.rotation.z=(lanes[target]-rider.position.x)*-.045;rider.position.y=.1+Math.sin(clock*13)*.045;
+invulnerable=Math.max(0,invulnerable-dt);shield=Math.max(0,shield-dt);
+aura.visible=shield>0;auraRim.visible=shield>0;
+if(shield>0){auraMat.opacity=.11+.035*Math.sin(clock*3);auraRim.rotation.y+=dt*.35;auraRim.material.opacity=.14+.05*Math.sin(clock*2.5)}
+rider.visible=invulnerable<=0||Math.floor(clock*12)%2===0;
+for(const stripe of stripes){stripe.position.z+=movement;if(stripe.position.z>15)stripe.position.z-=117}
+for(const g of decorations){g.position.z+=movement;if(g.position.z>19)g.position.z-=232}
+for(const g of streetDetails){g.position.z+=movement;if(g.position.z>19)g.position.z-=232}
+spawnTimer-=dt;if(spawnTimer<=0){spawnRow();spawnTimer=Math.max(.42,2.2/Math.sqrt(speed))}
+for(let i=active.length-1;i>=0;i--){const o=active[i];o.position.z+=movement;if(o.userData.type==='thief'||o.userData.type==='car'){
+// Los vehículos y ladrones se acercan al jugador sin abandonar su carril original.
+o.position.z+=dt*o.userData.approachSpeed;
+o.position.x=lanes[o.userData.lane];
+if(o.userData.type==='thief')o.position.y=Math.abs(Math.sin(clock*11+o.userData.wiggle))*.14;
+}if(o.userData.spin){o.userData.spin.rotation.y+=dt*3;o.userData.spin.rotation.z+=dt*1.3}
+if(!o.userData.collected&&Math.abs(o.position.z-rider.position.z)<(o.userData.type==='thief'?1.75:1.35)&&Math.abs(o.position.x-rider.position.x)<(o.userData.type==='thief'?1.1:1.4)){o.userData.collected=true;collision(o);scene.remove(o);active.splice(i,1);continue}
+if(o.position.z>16){scene.remove(o);active.splice(i,1)}}
+if(tipIndex<tips.length-1){tipTimer-=dt;if(tipTimer<=0){tipIndex++;speech(tips[tipIndex],tipIndex===tips.length-1?4.5:5.5);tipTimer=6.8}}
+speechTimer-=dt;if(speechTimer<=0)$('speech').classList.add('off');hud()
+}
+function move(d){if(phase==='play')target=clamp(target+d,0,2)}
+$('left').addEventListener('pointerdown',e=>{e.preventDefault();move(-1)});$('right').addEventListener('pointerdown',e=>{e.preventDefault();move(1)});
+addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','a','A','d','D','Escape',' '].includes(e.key))e.preventDefault();if(e.repeat)return;if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a')move(-1);if(e.key==='ArrowRight'||e.key.toLowerCase()==='d')move(1);if(e.key==='Escape'||e.key===' ')togglePause()});
+let touchX=0;renderer.domElement.addEventListener('touchstart',e=>{touchX=e.touches[0].clientX},{passive:true});renderer.domElement.addEventListener('touchend',e=>{let delta=e.changedTouches[0].clientX-touchX;if(Math.abs(delta)>30)move(delta>0?1:-1)},{passive:true});
+function togglePause(){if(phase==='play'){phase='pause';$('meme').classList.remove('show');$('heading').textContent='⏸️ En pausa';$('message').textContent='Descansa un momento y vuelve a la ruta cuando quieras.';$('extra').innerHTML='';$('mainBtn').textContent='▶ CONTINUAR';$('overlay').classList.remove('hide');$('speech').classList.add('off')}else if(phase==='pause'){phase='play';$('overlay').classList.add('hide')}}
+$('pause').onclick=togglePause;$('mainBtn').onclick=()=>phase==='pause'?togglePause():start();
+function resize(){camera.aspect=innerWidth/innerHeight;camera.fov=innerWidth<650?75:65;camera.position.set(0,innerWidth<650?9:7.8,innerWidth<650?15.7:12.6);camera.lookAt(0,1,-16);camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
+addEventListener('resize',resize);resize();$('loading').classList.add('hide');
+let last=performance.now();function loop(t){const dt=Math.min(.045,(t-last)/1000);last=t;update(dt);renderer.render(scene,camera);requestAnimationFrame(loop)}requestAnimationFrame(loop);
+</script></body></html>
